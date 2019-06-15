@@ -21,14 +21,11 @@ namespace SuperAdventure
         {
             InitializeComponent();
 
-            _player = new Player(20, 0, 1, 10, 10);
+            _player = new Player(20, 0, 10, 10);
             MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
             _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
 
-            lblHitPoints.Text = _player.CurrenthitPoints.ToString();
-            lblGold.Text = _player.Gold.ToString();
-            lblExperience.Text = _player.ExperiencePoints.ToString();
-            lblLevel.Text = _player.Level.ToString();
+            UpdatePlayerStats();
          }
 
         private void SuperAdventure_Load(object sender, EventArgs e)
@@ -96,7 +93,6 @@ namespace SuperAdventure
                 //Give exp to the player
                 _player.ExperiencePoints += _currentMonster.RewardExerperiencePoints;
                 rtbMessages.Text += "You receive " + _currentMonster.RewardExerperiencePoints + " experience points." + Environment.NewLine;
-                _player.Level = _player.ComputePlayerLevel(_player.ExperiencePoints);
                 ScrollToBottomOfMessages();
 
                 // give gp to the player
@@ -147,12 +143,7 @@ namespace SuperAdventure
                     }
                 }
 
-                // Refresh player information and inventory controls
-                lblHitPoints.Text = _player.CurrenthitPoints.ToString();
-                lblGold.Text = _player.Gold.ToString();
-                lblExperience.Text = _player.ExperiencePoints.ToString();
-                lblLevel.Text = _player.Level.ToString();
-
+                UpdatePlayerStats();
                 UpdateInventoryListInUI();
                 UpdateWeaponListInUI();
                 UpdatePotionListInUI();
@@ -217,7 +208,7 @@ namespace SuperAdventure
                 MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
             }
 
-            lblHitPoints.Text = _player.CurrenthitPoints.ToString();
+            UpdatePlayerStats();
             UpdateInventoryListInUI();
             UpdatePotionListInUI();
         }
@@ -278,8 +269,7 @@ namespace SuperAdventure
             // Completely heal the player
             _player.CurrenthitPoints = _player.MaximumHitPoints;
 
-            // Update Hit Points in UI
-            lblHitPoints.Text = _player.CurrenthitPoints.ToString();
+            UpdatePlayerStats();
 
             //Update the mini map
             pb_Map.Load(newLocation.ImageLocation);
@@ -322,7 +312,6 @@ namespace SuperAdventure
                             ScrollToBottomOfMessages();
 
                             _player.ExperiencePoints += newLocation.QuestAvailableHere.RewardExperiencePoints;
-                            _player.Level = _player.ComputePlayerLevel(_player.ExperiencePoints);
                             _player.Gold += newLocation.QuestAvailableHere.RewardGold;
 
                             // Add the reward item to the player's inventory
@@ -511,6 +500,15 @@ namespace SuperAdventure
 
                 cboPotions.SelectedIndex = 0;
             }
+        }
+
+        private void UpdatePlayerStats()
+        {
+            //refresh player info and inventory controls
+            lblHitPoints.Text = _player.CurrenthitPoints.ToString();
+            lblGold.Text = _player.Gold.ToString();
+            lblExperience.Text = _player.ExperiencePoints.ToString();
+            lblLevel.Text = _player.Level.ToString();
         }
 
         private void DgvInventory_CellContentClick(object sender, DataGridViewCellEventArgs e)

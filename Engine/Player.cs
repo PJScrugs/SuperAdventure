@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace Engine
 {
@@ -8,16 +9,18 @@ namespace Engine
     {
         public int Gold { get; set; }
         public int ExperiencePoints { get; set; }
-        public int Level { get; set; }
+        public int Level
+        {
+            get { return ((ExperiencePoints / 100) + 1); }
+        }
         public List<InventoryItem> Inventory { get; set; }
         public List<PlayerQuest> Quests { get; set; }
         public Location CurrentLocation { get; set; }
 
-        public Player(int gold, int experiencePoints, int level, int currentHitPoints, int maximumHitPoints) : base(currentHitPoints, maximumHitPoints)
+        public Player(int gold, int experiencePoints, int currentHitPoints, int maximumHitPoints) : base(currentHitPoints, maximumHitPoints)
         {
             Gold = gold;
             ExperiencePoints = experiencePoints;
-            Level = level;
 
             Inventory = new List<InventoryItem>();
             Quests = new List<PlayerQuest>();
@@ -49,35 +52,17 @@ namespace Engine
         {
             if(location.ItemRequiredToEnter == null)
             {
-                // location doesn't have requred item
+                // there's no item required to enter
                 return true;
             }
 
-            foreach(InventoryItem ii in Inventory)
-            {
-                // Check inventory for the item
-                if(ii.Details.ID == location.ItemRequiredToEnter.ID)
-                {
-                    // found the item
-                    return true;
-                }
-            }
-
-            // the player doesn't have the item
-            return false;
+            // see if the player has the required in their inventory
+            return Inventory.Exists(ii => ii.Details.ID == location.ItemRequiredToEnter.ID);
         }
 
         public bool HasThisQuest(Quest quest)
         {
-            foreach(PlayerQuest playerQuest in Quests)
-            {
-                if(playerQuest.Details.ID == quest.ID)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return Quests.Exists(pq => pq.Details.ID == quest.ID);
         }
 
         public bool CompetedThisQuest(Quest quest)
@@ -131,47 +116,40 @@ namespace Engine
         {
             foreach(QuestCompletionItem qci in quest.QuestCompletionItems)
             {
-                foreach(InventoryItem ii in Inventory)
+                InventoryItem item = Inventory.SingleOrDefault(ii => ii.Details.ID == qci.Details.ID);
+
+                if(item != null)
                 {
-                    if(ii.Details.ID == qci.Details.ID)
-                    {
-                        // remove the qty from the player's inventory that was needed to complete the quest
-                        ii.Quantity -= qci.Quantity;
-                        break;
-                    }
+                    // subtract the quantity from the player's inventory that was needed to complete the quest
+                    item.Quantity -= qci.Quantity;
                 }
             }
         }
 
         public void AddItemToInventory(Item itemToAdd)
         {
-            foreach(InventoryItem ii in Inventory)
+            InventoryItem item = Inventory.SingleOrDefault(ii => ii.Details.ID == itemToAdd.ID);
+            
+            if(item == null)
             {
-                if(ii.Details.ID == itemToAdd.ID)
-                {
-                    // They have the item in their inventory so increase the quantity by one
-                    ii.Quantity++;
-
-                    return;
-                }
+                // player didn't have the item so add one
+                Inventory.Add(new InventoryItem(itemToAdd, 1));
             }
-
-            // They didn't have the item,so add it to their inventory, with a quantity of 1
-            Inventory.Add(new InventoryItem(itemToAdd, 1));
+            else
+            {
+                // player has one, so add one=
+                item.Quantity++;
+            }
         }
 
         public void MarkQuestCompleted(Quest quest)
         {
-            // Find the quest in the player's quest list
-            foreach(PlayerQuest pq in Quests)
-            {
-                if(pq.Details.ID == quest.ID)
-                {
-                    //Mark it as complete
-                    pq.IsCompleted = true;
+            // find the quest in the plaery's quest list
+            PlayerQuest playerQuest = Quests.SingleOrDefault(pq => pq.Details.ID == quest.ID);
 
-                    return;
-                }
+            if(playerQuest != null)
+            {
+                playerQuest.IsCompleted = true;
             }
         }
     }
