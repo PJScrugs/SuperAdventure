@@ -17,6 +17,7 @@ namespace Engine
         public List<InventoryItem> Inventory { get; set; }
         public List<PlayerQuest> Quests { get; set; }
         public Location CurrentLocation { get; set; }
+        public Weapon CurrentWeapon { get; set; }
 
         public Player(int currentHitPoints, int maximumHitPoints, int gold, int experiencePoints) : base(currentHitPoints, maximumHitPoints)
         {
@@ -41,18 +42,24 @@ namespace Engine
             try
             {
                 XmlDocument playerData = new XmlDocument();
-
+                
                 playerData.LoadXml(xmlPlayerData);
 
                 int currentHitPoints = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/CurrentHitPoints").InnerText);
                 int maximumHitPoints = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/MaximumHitPoints").InnerText);
                 int gold = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/Gold").InnerText);
                 int experiencePoints = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/ExperiencePoints").InnerText);
-
+                
                 Player player = new Player(currentHitPoints, maximumHitPoints, gold, experiencePoints);
 
                 int currentLocationID = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/CurrentLocation").InnerText);
                 player.CurrentLocation = World.LocationByID(currentLocationID);
+
+                if(playerData.SelectSingleNode("/Player/Stats/CurrentWeapon") != null)
+                {
+                    int currentWeaponID = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/CurrentWeapon").InnerText);
+                    player.CurrentWeapon = (Weapon)World.ItemByID(currentWeaponID);
+                }
 
                 foreach(XmlNode node in playerData.SelectNodes("/Player/InventoryItems/InventoryItem"))
                 {
@@ -80,7 +87,8 @@ namespace Engine
             }
             catch
             {
-                //create the default player if no valid file is found 
+                //create the default player if no valid file is found
+                Console.WriteLine("Catch Ran :(");
                 return Player.CreateDefaultPlayer();
             }
         }
@@ -211,7 +219,7 @@ namespace Engine
             maximumHitPoints.AppendChild(playerData.CreateTextNode(this.MaximumHitPoints.ToString()));
             stats.AppendChild(maximumHitPoints);
 
-            XmlNode gold = playerData.CreateElement("gold");
+            XmlNode gold = playerData.CreateElement("Gold");
             gold.AppendChild(playerData.CreateTextNode(this.Gold.ToString()));
             stats.AppendChild(gold);
 
@@ -220,8 +228,15 @@ namespace Engine
             stats.AppendChild(experiencePoints);
 
             XmlNode currentLocation = playerData.CreateElement("CurrentLocation");
-            currentLocation.AppendChild(playerData.CreateTextNode(this.CurrentLocation.ToString()));
+            currentLocation.AppendChild(playerData.CreateTextNode(this.CurrentLocation.ID.ToString()));
             stats.AppendChild(currentLocation);
+
+            if(CurrentWeapon != null)
+            {
+                XmlNode currentWeapon = playerData.CreateElement("CurrentWeapon");
+                currentWeapon.AppendChild(playerData.CreateTextNode(this.CurrentWeapon.ID.ToString()));
+                stats.AppendChild(currentWeapon);
+            }
 
             //create the inventoryitems child nnode to hold each inventoryitem node
             XmlNode inventoryItems = playerData.CreateElement("InventoryItems");

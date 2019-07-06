@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
 using Engine;
+using System.IO;
 
 namespace SuperAdventure
 {
@@ -16,15 +16,23 @@ namespace SuperAdventure
     {
         private Player _player;
         private Monster _currentMonster;
+        private const string PLAYER_DATA_FILE_NAME = "PlayerData.xml";
 
         public SuperAdventure()
         {
             InitializeComponent();
 
-            _player = new Player(20, 0, 10, 10);
-            MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
-            _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
+            if (File.Exists(PLAYER_DATA_FILE_NAME))
+            {
+                _player = Player.CreatePlayerFromXmlString(File.ReadAllText(PLAYER_DATA_FILE_NAME));
+                rtbMessages.Text += "Loaded Save File";
+            }
+            else
+            {
+                _player = Player.CreateDefaultPlayer();
+            }
 
+            MoveTo(_player.CurrentLocation);
             UpdatePlayerStats();
          }
 
@@ -213,9 +221,9 @@ namespace SuperAdventure
             UpdatePotionListInUI();
         }
 
-        private void CboWeapons_SelectedIndexChanged(object sender, EventArgs e)
+        private void cboWeapons_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            _player.CurrentWeapon = (Weapon)cboWeapons.SelectedItem;
         }
 
         private void CboPotions_SelectedIndexChanged(object sender, EventArgs e)
@@ -443,6 +451,7 @@ namespace SuperAdventure
 
         private void UpdateWeaponListInUI()
         {
+
             List<Weapon> weapons = new List<Weapon>();
 
             foreach(InventoryItem inventoryItem in _player.Inventory)
@@ -464,11 +473,20 @@ namespace SuperAdventure
             }
             else
             {
+                cboWeapons.SelectedIndexChanged -= cboWeapons_SelectedIndexChanged;
                 cboWeapons.DataSource = weapons;
+                cboWeapons.SelectedIndexChanged += cboWeapons_SelectedIndexChanged;
                 cboWeapons.DisplayMember = "Name";
                 cboWeapons.ValueMember = "ID";
 
-                cboWeapons.SelectedIndex = 0;
+                if(_player.CurrentWeapon != null)
+                {
+                    cboWeapons.SelectedItem = _player.CurrentWeapon;
+                }
+                else
+                {
+                    cboWeapons.SelectedIndex = 0;
+                }
             }
         }
 
@@ -518,6 +536,16 @@ namespace SuperAdventure
         private void Pb_Map_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void SuperAdventure_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            File.WriteAllText(PLAYER_DATA_FILE_NAME, _player.ToXmlString());
+        }
+
+        private void cboWeapns_SelectIndexChanged(object sender, EventArgs e)
+        {
+            _player.CurrentWeapon = (Weapon)cboWeapons.SelectedItem;
         }
     }
 }
